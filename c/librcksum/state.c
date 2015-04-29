@@ -66,6 +66,7 @@ struct rcksum_state *rcksum_init(zs_blockid nblocks, size_t blocksize,
     /* Hashes for looking up checksums are generated when needed.
      * So initially store NULL so we know there's nothing there yet.
      */
+    z->rover = NULL;
     z->rsum_hash = NULL;
     z->bithash = NULL;
 
