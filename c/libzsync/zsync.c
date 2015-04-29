@@ -868,7 +868,6 @@ static int zsync_receive_data_uncompressed(struct zsync_receiver *zr,
         if (x > blocksize - (offset % blocksize))
             x = blocksize - (offset % blocksize);
 
-        if (zr->outoffset == offset) {
             /* Half-way through a block, so let's try and complete it */
             if (len)
                 memcpy(zr->outbuf + offset % blocksize, buf, x);
@@ -882,7 +881,7 @@ static int zsync_receive_data_uncompressed(struct zsync_receiver *zr,
                 if (zsync_submit_data
                     (zr->zs, zr->outbuf, zr->outoffset + x - blocksize, 1))
                     ret = 1;
-        }
+
         buf += x;
         len -= x;
         offset += x;
