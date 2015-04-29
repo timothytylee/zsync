@@ -24,6 +24,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <fcntl.h>
 
 #ifdef WITH_DMALLOC
 # include <dmalloc.h>
@@ -31,6 +32,14 @@
 
 #include "rcksum.h"
 #include "internal.h"
+
+#ifndef HAVE_MKSTEMP
+int mkstemp(char *template)
+{
+    mktemp(template);
+    return open(template, O_RDWR|O_CREAT|O_EXCL|O_BINARY, 0600);
+}
+#endif
 
 /* rcksum_init(num_blocks, block_size, rsum_bytes, checksum_bytes, require_consecutive_matches)
  * Creates and returns an rcksum_state with the given properties
@@ -119,6 +128,32 @@ int rcksum_filehandle(struct rcksum_state *rs) {
     int h = rs->fd;
     rs->fd = -1;
     return h;
+}
+  
+int rcksum_rename_file(struct rcksum_state* z, const char* f)
+{
+    char* rf = z->filename;
+
+#ifdef HAVE_WINSOCK2_H
+    /* Close current file descriptor to avoid MoveFileEx() failing */
+    int x;
+    off_t old_pos = lseek(z->fd, 0, SEEK_CUR);
+    close(z->fd);
+    x = !MoveFileEx(rf, f,
+        MOVEFILE_COPY_ALLOWED | MOVEFILE_REPLACE_EXISTING);
+
+    /* Re-open file at last position */
+    z->fd = open(x ? rf : f, O_RDWR|O_EXCL|O_BINARY, 0600);
+    if (z->fd != -1)  lseek(z->fd, old_pos, SEEK_SET);
+    else  x = 1;
+#else
+    int x = rename(rf, f);
+#endif
+
+    if (!x) { free(rf); z->filename = strdup(f); }
+    else perror("rename");
+
+    return x;
 }
 
 /* rcksum_end - destructor */

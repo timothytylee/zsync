@@ -40,6 +40,10 @@
 #include "url.h"
 #include "progress.h"
 
+#ifdef HAVE_WINSOCK2_H
+# include <mswsock.h>
+#endif
+
 /* FILE* f = open_zcat_pipe(file_str)
  * Returns a (popen) filehandle which when read returns the un-gzipped content
  * of the given file. Or NULL on error; or the filehandle may fail to read. It
@@ -69,7 +73,7 @@ FILE* open_zcat_pipe(const char* fname)
     if (!no_progress)
         fprintf(stderr, "reading seed %s: ", cmd);
     {   /* Finally, open the subshell for reading, and return the handle */
-        FILE* f = popen(cmd, "r");
+        FILE* f = popen(cmd, "rb");
         free(cmd);
         return f;
     }
@@ -105,7 +109,7 @@ void read_seed_file(struct zsync_state *z, const char *fname) {
     }
     else {
         /* Simple uncompressed file - open it */
-        FILE *f = fopen(fname, "r");
+        FILE *f = fopen(fname, "rb");
         if (!f) {
             perror("open");
             fprintf(stderr, "not using seed file %s\n", fname);
@@ -135,7 +139,7 @@ void read_seed_file(struct zsync_state *z, const char *fname) {
     }
 }
 
-long long http_down;
+long long http_down = 0;
 
 /* A ptrlist is a very simple structure for storing lists of pointers. This is
  * the only function in its API. The structure (not actually a struct) consists
@@ -173,7 +177,7 @@ struct zsync_state *read_zsync_control_file(const char *p, const char *fn) {
     char *lastpath = NULL;
 
     /* Try opening as a local path */
-    f = fopen(p, "r");
+    f = fopen(p, "rb");
     if (!f) {
         /* No such local file - if not a URL either, report error */
         if (!is_url_absolute(p)) {
@@ -470,6 +474,14 @@ int main(int argc, char **argv) {
     char *zfname = NULL;
     time_t mtime;
 
+#ifdef HAVE_WINSOCK2_H
+    int sockopt = SO_SYNCHRONOUS_NONALERT;
+    WSADATA wsaData;
+    WSAStartup(MAKEWORD (1,1), &wsaData);
+    setsockopt(INVALID_SOCKET, SOL_SOCKET, SO_OPENTYPE,
+        (char *)&sockopt, sizeof(sockopt));
+#endif
+
     srand(getpid());
     {   /* Option parsing */
         int opt;
@@ -533,8 +545,10 @@ int main(int argc, char **argv) {
     }
 
     /* No progress display except on terminal */
+#ifndef HAVE_WINSOCK2_H
     if (!isatty(0))
         no_progress = 1;
+#endif
     {   /* Get proxy setting from the environment */
         char *pr = getenv("http_proxy");
 
@@ -678,13 +692,19 @@ int main(int argc, char **argv) {
                If that fails due to EPERM, it is probably a filesystem that
                doesn't support hard-links - so try just renaming it to the
                backup filename. */
-            if (link(filename, oldfile_backup) != 0
-                && (errno != EPERM || rename(filename, oldfile_backup) != 0)) {
+#ifdef HAVE_WINSOCK2_H
+            ok = MoveFileEx(filename, oldfile_backup,
+                MOVEFILE_COPY_ALLOWED | MOVEFILE_REPLACE_EXISTING);
+#else
+            ok = !(link(filename,oldfile_backup) != 0
+                && (errno != EPERM || rename(filename, oldfile_backup) != 0));
+#endif
+            if (!ok) {
+                /* Prevent overwrite of old file below */
                 perror("linkname");
                 fprintf(stderr,
                         "Unable to back up old file %s - completed download left in %s\n",
                         filename, temp_file);
-                ok = 0;         /* Prevent overwrite of old file below */
             }
         }
         if (ok) {
@@ -714,5 +734,8 @@ int main(int argc, char **argv) {
         printf("used %lld local, fetched %lld\n", local_used, http_down);
     free(referer);
     free(temp_file);
+#ifdef HAVE_WINSOCK2_H
+    WSACleanup();
+#endif
     return 0;
 }

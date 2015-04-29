@@ -15,7 +15,7 @@
 
 #include <inttypes.h>
 
-#ifdef PRIu32
+#if defined(PRIu32) && !defined(HAVE_WINSOCK2_H)
 # define SIZE_T_PF "%zd"
 #else
 # define SIZE_T_PF "%u"
@@ -28,10 +28,14 @@
 #  define OFF_T_PF "%llu"
 # endif
 #else
+# ifdef HAVE_WINSOCK2_H
+#  define OFF_T_PF "%ld"
+# else
 # ifdef PRIu32
 #  define OFF_T_PF "%" PRIu32
 # else
 #  define OFF_T_PF "%lu"
 # endif
+#endif
 #endif
 

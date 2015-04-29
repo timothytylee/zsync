@@ -42,8 +42,6 @@
 #include <ctype.h>
 #include <time.h>
 
-#include <arpa/inet.h>
-
 #ifdef WITH_DMALLOC
 # include <dmalloc.h>
 #endif
@@ -527,17 +525,8 @@ static char *zsync_cur_filename(struct zsync_state *zs) {
  * Tell libzsync to move the local copy of the target (or under construction
  * target) to the given filename. */
 int zsync_rename_file(struct zsync_state *zs, const char *f) {
-    char *rf = zsync_cur_filename(zs);
-
-    int x = rename(rf, f);
-
-    if (!x) {
-        free(rf);
-        zs->cur_filename = strdup(f);
-    }
-    else
-        perror("rename");
-
+    int x = rcksum_rename_file(zs->rs, f);
+    zsync_cur_filename(zs);
     return x;
 }
 
@@ -672,12 +661,12 @@ static int zsync_recompress(struct zsync_state *zs) {
     /* Read gzipped version of the data via pipe from gzip; write it to our new
      * output file, except that we replace the gzip header with our own from
      * the .zsync file. */
-    g = popen(cmd, "r");
+    g = popen(cmd, "rb");
     if (g) {
         char zoname[1024];
 
         snprintf(zoname, sizeof(zoname), "%s.gz", zs->cur_filename);
-        zout = fopen(zoname, "w");
+        zout = fopen(zoname, "wb");
 
         if (zout) {
             char *p = zs->gzhead;
