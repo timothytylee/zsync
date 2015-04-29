@@ -601,13 +601,14 @@ static int zsync_sha1(struct zsync_state *zs, int fh) {
     SHA1_CTX shactx;
 
     {                           /* Do SHA1 of file contents */
-        unsigned char buf[4096];
+        unsigned char* buf = (unsigned char*)malloc(4096);
         int rc;
 
         SHA1Init(&shactx);
         while (0 < (rc = read(fh, buf, sizeof buf))) {
             SHA1Update(&shactx, buf, rc);
         }
+        free(buf);
         if (rc < 0) {
             perror("read");
             return -1;
@@ -776,13 +777,14 @@ void zsync_configure_zstream_for_zdata(const struct zsync_state *zs,
 
         /* Read in 32k of leading uncompressed context - needed because the deflate
          * compression method includes back-references to previously-seen strings. */
-        unsigned char wbuf[32768];
+        unsigned char* wbuf = (unsigned char*)malloc(32768);
         rcksum_read_known_data(zs->rs, wbuf, pos - lookback, lookback);
 
         /* Fake an output buffer of 32k filled with data to zlib */
         zstrm->next_out = wbuf + lookback;
         zstrm->avail_out = 0;
         updatewindow(zstrm, lookback);
+        free(wbuf);
     }
 }
 
