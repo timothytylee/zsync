@@ -146,10 +146,10 @@ long long http_down;
  * number of entries is passed by reference and updated in place. The new entry
  * is appended to the list.
  */
-static void **append_ptrlist(int *n, void **p, void *a) {
+static char **append_ptrlist(int *n, char **p, char *a) {
     if (!a)
         return p;
-    p = realloc(p, (*n + 1) * sizeof *p);
+    p = (char**)realloc(p, (*n + 1) * sizeof *p);
     if (!p) {
         fprintf(stderr, "out of memory\n");
         exit(1);
