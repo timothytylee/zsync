@@ -242,7 +242,7 @@ struct zsync_state *zsync_begin(FILE * f) {
 
                 zblock = malloc(nzblocks * sizeof *zblock);
                 if (zblock) {
-                    if (fread(zblock, sizeof *zblock, nzblocks, f) < nzblocks) {
+                    if ((int)fread(zblock, sizeof *zblock, nzblocks, f) < nzblocks) {
                         fprintf(stderr, "premature EOF after Z-Map\n");
                         free(zs);
                         return NULL;
@@ -442,12 +442,12 @@ const char *const *zsync_get_urls(struct zsync_state *zs, int *n, int *t) {
     if (zs->zmap && zs->nzurl) {
         *n = zs->nzurl;
         *t = 1;
-        return zs->zurl;
+        return (const char* const*)zs->zurl;
     }
     else {
         *n = zs->nurl;
         *t = 0;
-        return zs->url;
+        return (const char* const*)zs->url;
     }
 }
 
@@ -660,7 +660,7 @@ static int zsync_recompress(struct zsync_state *zs) {
         size_t j = strlen(cmd);
         char c;
 
-        while ((c = zs->cur_filename[i++]) != 0 && j < sizeof(cmd) - 2) {
+        while ((c = zs->cur_filename[i++]) != 0 && j < (int)sizeof(cmd) - 2) {
             if (!isalnum(c))
                 cmd[j++] = '\\';
             cmd[j++] = c;
@@ -820,7 +820,7 @@ struct zsync_receiver {
     struct z_stream_s strm;     /* Decompression object */
     int url_type;               /* Compressed or not */
     unsigned char *outbuf;      /* Working buffer to keep incomplete blocks of data */
-    off_t outoffset;            /* and the position in that buffer */
+    long long outoffset;        /* and the position in that buffer */
 };
 
 /* Constructor */
@@ -929,12 +929,12 @@ static int zsync_receive_data_compressed(struct zsync_receiver *zr,
     zr->strm.next_in = buf;
     zr->strm.avail_in = len;
 
-    if (zr->strm.total_in == 0 || offset != zr->strm.total_in) {
+    if (zr->strm.total_in == 0 || offset != (off_t)zr->strm.total_in) {
         zsync_configure_zstream_for_zdata(zr->zs, &(zr->strm), offset,
                                           &(zr->outoffset));
 
         /* On first iteration, we might be reading an incomplete block from zsync's point of view. Limit avail_out so we can stop after doing that and realign with the buffer. */
-        zr->strm.avail_out = blocksize - (zr->outoffset % blocksize);
+        zr->strm.avail_out = blocksize - ((size_t)zr->outoffset % blocksize);
         zr->strm.next_out = zr->outbuf;
     }
     else {
@@ -960,7 +960,7 @@ static int zsync_receive_data_compressed(struct zsync_receiver *zr,
         case Z_OK:
             if (zr->strm.avail_out == 0 || eoz) {
                 /* If this was at the start of a block, try submitting it */
-                if (!(zr->outoffset % blocksize)) {
+                if (!((size_t)zr->outoffset % blocksize)) {
                     int rc;
 
                     if (zr->strm.avail_out)
