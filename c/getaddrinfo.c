@@ -79,10 +79,6 @@
 
 #include <sys/types.h>
 #include <stdio.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <arpa/inet.h>
-#include <netdb.h>
 
 #if defined(STDC_HEADERS) || defined(HAVE_STRING_H)
 #include <string.h>

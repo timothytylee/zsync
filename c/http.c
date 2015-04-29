@@ -24,15 +24,16 @@
 #include <string.h>
 #include <errno.h>
 #include <unistd.h>
+#include <fcntl.h>
 
 #include <sys/types.h>
 #include <sys/stat.h>
-#include <sys/socket.h>
-#include <netdb.h>
 #include <time.h>
 
 #ifndef HAVE_GETADDRINFO
+# ifndef HAVE_WINSOCK2_H
 #include "getaddrinfo.h"
+#endif
 #endif
 
 #ifdef WITH_DMALLOC
@@ -88,7 +89,10 @@ int connect_to(const char *node, const char *service) {
  * second parameter. 
  */
 FILE *http_get_stream(int fd, int *code) {
-    FILE *f = fdopen(fd, "r");
+#ifdef HAVE_WINSOCK2_H
+    fd = _open_osfhandle(fd, O_RDONLY);
+#endif
+    FILE *f = fdopen(fd, "rb");
     char buf[256];
     char *p;
 
@@ -239,6 +243,15 @@ static char *get_auth_hdr(const char *hn) {
     return NULL;
 }
 
+#ifndef HAVE_GMTIME_R
+struct tm*
+gmtime_r(time_t* t, struct tm* d)
+{
+    *d = *(gmtime(t));
+    return d;
+}
+#endif
+
 /* http_date_string(time, buf, buflen)
  * Stores a valid ASCII representation of the supplied datetime in the supplied
  * buffer (length given as buflen). Returns non-NULL if successful.
@@ -379,15 +392,15 @@ FILE *http_get(const char *orig_url, char **track_referer, const char *tfname) {
             }
             else if (code == 200) {     // Downloading whole file
                 /* Write new file (plus allow reading once we finish) */
-                g = fname ? fopen(fname, "w+") : tmpfile();
+                g = fname ? fopen(fname, "wb+") : tmpfile();
             }
             else if (code == 206 && fname) {    // Had partial content and server confirms not modified
                 /* Append to existing on-disk content (plus allow reading once we finish) */
-                g = fopen(fname, "a+");
+                g = fopen(fname, "ab+");
             }
             else if (code == 304) {     // Unchanged (if-modified-since was false)
                 /* No fetching, just reuse on-disk file */
-                g = fopen(tfname, "r");
+                g = fopen(tfname, "rb");
             }
             else {                      /* Don't know - error */
                 fclose(f);
@@ -600,8 +613,8 @@ static int get_more_data(struct range_fetch *rf) {
          * the rest of the buffer; ignore EINTR. */
         int n;
         do {
-            n = read(rf->sd, &(rf->buf[rf->buf_end]),
-                     sizeof(rf->buf) - rf->buf_end);
+            n = recv(rf->sd, &(rf->buf[rf->buf_end]),
+                     sizeof(rf->buf) - rf->buf_end, 0);
         } while (n == -1 && errno == EINTR);
         if (n < 0) {
             perror("read");

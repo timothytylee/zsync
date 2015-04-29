@@ -119,6 +119,14 @@ static void write_blocks(struct rcksum_state *z, const unsigned char *data,
     }
 }
 
+#ifndef HAVE_PREAD
+size_t pread(int d, void* buf, size_t nbytes, off_t offset)
+{
+    if (lseek(d, offset, SEEK_SET) == -1) return -1;
+    return read(d, buf, nbytes);
+}
+#endif
+
 /* rcksum_read_known_data(self, buf, offset, len)
  * Read back data from the working output - read len bytes from offset into
  * buf[] (which must be at least len bytes long) */

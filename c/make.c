@@ -27,7 +27,6 @@
 #include <math.h>
 #include <time.h>
 
-#include <arpa/inet.h>
 #ifdef HAVE_INTTYPES_H
 #include <inttypes.h>
 #endif
@@ -45,6 +44,10 @@
 #include "libzsync/sha1.h"
 #include "zlib/zlib.h"
 #include "format_string.h"
+
+#ifndef _O_BINARY
+# define _O_BINARY   0x8000 
+#endif
 
 /* We're only doing one file per run, so these are global state for the current
  * file being processed */
@@ -461,7 +464,7 @@ static const char *const try_opts[] =
 char *guess_gzip_options(const char *f) {
     char orig[SAMPLE];
     {   /* Read sample of the header of the compressed file */
-        FILE *s = fopen(f, "r");
+        FILE *s = fopen(f, "rb");
         if (!s) {
             perror("open");
             return NULL;
@@ -505,7 +508,7 @@ char *guess_gzip_options(const char *f) {
                 if (verbose)
                     fprintf(stderr, "running %s to determine gzip options\n",
                             cmd);
-                p = popen(cmd, "r");
+                p = popen(cmd, "rb");
                 if (!p) {
                     perror(cmd);
                 }
@@ -810,6 +813,10 @@ int main(int argc, char **argv) {
         free(outfname);
     }
     else {
+#ifdef HAVE_WINSOCK2_H
+        // Switch stdout to binary mode
+        _setmode(_fileno(stdout), _O_BINARY);
+#endif
         fout = stdout;
     }
 

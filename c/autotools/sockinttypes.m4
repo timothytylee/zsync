@@ -32,8 +32,13 @@ dnl *
 AC_DEFUN([X_TYPE_SOCKLEN_T],
 [AC_CACHE_CHECK([for socklen_t], ac_cv_type_socklen_t,
 [AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[
+#ifdef HAVE_WINSOCK2_H
+# include <winsock2.h>
+# include <ws2tcpip.h>
+#else
 #include <sys/types.h>
-#include <sys/socket.h>]], [[
+# include <sys/socket.h>
+#endif]], [[
 socklen_t socklen;
 ]])],[ac_cv_type_socklen_t=yes],[ac_cv_type_socklen_t=no])])
 if test "$ac_cv_type_socklen_t" != yes; then
@@ -47,44 +52,69 @@ dnl *
 AC_DEFUN([X_TYPE_IN_PORT_T],
 [AC_CACHE_CHECK([for in_port_t], ac_cv_type_in_port_t,
 [AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[
+#ifdef HAVE_WINSOCK2_H
+# include <winsock2.h>
+# include <ws2tcpip.h>
+#else
 #include <sys/types.h>
 #include <sys/socket.h>
-#include <netinet/in.h>]], [[
+# include <netinet/in.h>
+#endif]], [[
 in_port_t in_port;
 ]])],[ac_cv_type_in_port_t=yes],[ac_cv_type_in_port_t=no])])
 if test "$ac_cv_type_in_port_t" != yes; then
     ac_cv_sin_port_size=unknown
     AC_RUN_IFELSE([AC_LANG_SOURCE([[
+    #ifdef HAVE_WINSOCK2_H
+    # include <winsock2.h>
+    # include <ws2tcpip.h>
+    #else
     #include <sys/types.h>
     #include <sys/socket.h>
     #include <netinet/in.h>
+    #endif
     int main() {
 	struct sockaddr_in addr;
 	return (sizeof(addr.sin_port) == sizeof(long)) ? 0 : 1;
     }
     ]])],[ac_cv_sin_port_size=long],[],[])
     AC_RUN_IFELSE([AC_LANG_SOURCE([[
+    #ifdef HAVE_WINSOCK2_H
+    # include <winsock2.h>
+    # include <ws2tcpip.h>
+    #else
     #include <sys/types.h>
     #include <sys/socket.h>
     #include <netinet/in.h>
+    #endif
     int main() {
 	struct sockaddr_in addr;
 	return (sizeof(addr.sin_port) == sizeof(int)) ? 0 : 1;
     }
     ]])],[ac_cv_sin_port_size=int],[],[])
     AC_RUN_IFELSE([AC_LANG_SOURCE([[
+    #ifdef HAVE_WINSOCK2_H
+    # include <winsock2.h>
+    # include <ws2tcpip.h>
+    #else
     #include <sys/types.h>
     #include <sys/socket.h>
     #include <netinet/in.h>
+    #endif
     int main() {
 	struct sockaddr_in addr;
 	return (sizeof(addr.sin_port) == sizeof(short)) ? 0 : 1;
     }
     ]])],[ac_cv_sin_port_size=short],[],[])
     AC_RUN_IFELSE([AC_LANG_SOURCE([[
+    #ifdef HAVE_WINSOCK2_H
+    # include <winsock2.h>
+    # include <ws2tcpip.h>
+    #else
     #include <sys/types.h>
     #include <sys/socket.h>
     #include <netinet/in.h>
+    #endif
     int main() {
 	struct sockaddr_in addr;
 	return (sizeof(addr.sin_port) == sizeof(char)) ? 0 : 1;
@@ -113,32 +143,52 @@ sa_family_t sa_family;
 if test "$ac_cv_type_sa_family_t" != yes; then
     ac_cv_sa_family_size=unknown
     AC_RUN_IFELSE([AC_LANG_SOURCE([[
+    #ifdef HAVE_WINSOCK2_H
+    # include <winsock2.h>
+    # include <ws2tcpip.h>
+    #else
     #include <sys/types.h>
     #include <sys/socket.h>
+    #endif
     int main() {
 	struct sockaddr addr;
 	return (sizeof(addr.sa_family) == sizeof(long)) ? 0 : 1;
     }
     ]])],[ac_cv_sa_family_size=long],[],[])
     AC_RUN_IFELSE([AC_LANG_SOURCE([[
+    #ifdef HAVE_WINSOCK2_H
+    # include <winsock2.h>
+    # include <ws2tcpip.h>
+    #else
     #include <sys/types.h>
     #include <sys/socket.h>
+    #endif
     int main() {
 	struct sockaddr addr;
 	return (sizeof(addr.sa_family) == sizeof(int)) ? 0 : 1;
     }
     ]])],[ac_cv_sa_family_size=int],[],[])
     AC_RUN_IFELSE([AC_LANG_SOURCE([[
+    #ifdef HAVE_WINSOCK2_H
+    # include <winsock2.h>
+    # include <ws2tcpip.h>
+    #else
     #include <sys/types.h>
     #include <sys/socket.h>
+    #endif
     int main() {
 	struct sockaddr addr;
 	return (sizeof(addr.sa_family) == sizeof(short)) ? 0 : 1;
     }
     ]])],[ac_cv_sa_family_size=short],[],[])
     AC_RUN_IFELSE([AC_LANG_SOURCE([[
+    #ifdef HAVE_WINSOCK2_H
+    # include <winsock2.h>
+    # include <ws2tcpip.h>
+    #else
     #include <sys/types.h>
     #include <sys/socket.h>
+    #endif
     int main() {
 	struct sockaddr addr;
 	return (sizeof(addr.sa_family) == sizeof(char)) ? 0 : 1;

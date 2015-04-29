@@ -29,7 +29,34 @@ AC_HEADER_STDC
 # but we do need to give at least one .h to test, or Solaris sh errors
 AC_CHECK_HEADERS([string.h])
 AC_TYPE_SIZE_T
-AC_CHECK_FUNCS(memcpy pwrite pread mkstemp)
+AC_CHECK_FUNCS(memcpy pwrite pread mkstemp gmtime_r)
+
+case $host_os in
+   mingw32)
+       host_os_mingw32=yes
+       AC_CHECK_HEADERS([winsock2.h])
+       AC_CHECK_LIB(ws2_32, main, LIBS="${LIBS} -lws2_32")
+       AC_DEFINE(popen, _popen, [mingw32 version of popen])
+       AC_DEFINE(pclose, _pclose, [mingw32 version of pclose])
+       AC_DEFINE(snprintf, _snprintf, [mingw32 version of snprintf])
+       AC_DEFINE(ftruncate, _chsize, [mingw32 does not have ftruncate])
+       AC_DEFINE(_WIN32_WINNT, 0x0501, [Force getaddrinfo declaration])
+       ;;
+   *)
+       AC_DEFINE([_XOPEN_SOURCE], 600, [Enable POSIX extensions if present])
+       AC_DEFINE([_BSD_SOURCE],1, [Enable BSD extensions if present])
+       AC_REPLACE_FUNCS(getaddrinfo)
+       ;;
+esac
+AM_CONDITIONAL([MINGW32], test "x$host_os_mingw32" = "xyes")
+
+AC_CHECK_DECL(BYTE_ORDER, [], [
+   AC_DEFINE(LITTLE_ENDIAN, 1234, [Little endian])
+   AC_DEFINE(BIG_ENDIAN, 4321, [Big endian])
+   AC_C_BIGENDIAN(
+      AC_DEFINE(BYTE_ORDER, BIG_ENDIAN, [Byte order]),
+      AC_DEFINE(BYTE_ORDER, LITTLE_ENDIAN, [Byte order]))
+   ])
 
 X_TYPE_SOCKLEN_T
 X_TYPE_IN_PORT_T
@@ -38,27 +65,25 @@ X_DECL_H_ERRNO
 dnl Solaris needs -lsocket - and we need this for the getaddrinfo test
 AC_CHECK_LIB(socket,socket)
 
-AC_REPLACE_FUNCS(getaddrinfo)
-
 dnl - Large file support if available
 AC_SYS_LARGEFILE
 AC_FUNC_FSEEKO
 AC_CHECK_SIZEOF(size_t)
 AC_CHECK_SIZEOF(off_t)
+AC_CHECK_TYPE(uint, unsigned int)
 
 AM_WITH_DMALLOC
-
-case $host_os in
-   mingw32)
-       host_os_mingw32=yes
-       LIBS="${LIBS} -lwsock32"
-       ;;
-   *)
-       AC_DEFINE([_XOPEN_SOURCE], 600, [Enable POSIX extensions if present])
-       AC_DEFINE([_BSD_SOURCE],1, [Enable BSD extensions if present])
-       ;;
-esac
-AM_CONDITIONAL([MINGW32], test "x$host_os_mingw32" = "xyes")
+AH_BOTTOM([
+#ifdef HAVE_WINSOCK2_H
+# include <winsock2.h>
+# include <ws2tcpip.h>
+#else
+# include <sys/socket.h>
+# include <netinet/in.h>
+# include <arpa/inet.h>
+# include <netdb.h>
+#endif
+])
 
 X_C_COMPILE_FLAGS($ZS_CFLAGS -g -Wall -Wwrite-strings -Winline -Wextra -Winline -Wmissing-noreturn -Wredundant-decls -Wnested-externs -Wundef -Wbad-function-cast -Wcast-align -Wvolatile-register-var -ffast-math)
 

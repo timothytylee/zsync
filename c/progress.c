@@ -25,7 +25,7 @@
 
 #include "progress.h"
 
-int no_progress;
+int no_progress = 0;
 
 /* progbar(chars, percent)
  * (Re)print progress bar with chars out of 20 shown and followed by the given
