@@ -29,7 +29,7 @@ AC_HEADER_STDC
 # but we do need to give at least one .h to test, or Solaris sh errors
 AC_CHECK_HEADERS([string.h])
 AC_TYPE_SIZE_T
-AC_CHECK_FUNCS(memcpy pwrite pread mkstemp gmtime_r)
+AC_CHECK_FUNCS(memcpy pwrite pread mkstemp gmtime_r strptime)
 
 case $host_os in
    mingw32)
