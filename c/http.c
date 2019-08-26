@@ -245,7 +245,7 @@ static char *get_auth_hdr(const char *hn) {
 
 #ifndef HAVE_GMTIME_R
 struct tm*
-gmtime_r(time_t* t, struct tm* d)
+gmtime_r(const time_t* t, struct tm* d)
 {
     *d = *(gmtime(t));
     return d;
