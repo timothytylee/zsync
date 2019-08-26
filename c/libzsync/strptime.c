@@ -1,3 +1,4 @@
+#include "config.h"
 #ifndef HAVE_STRPTIME
 /*	$NetBSD: strptime.c,v 1.36 2012/03/13 21:13:48 christos Exp $	*/
 
