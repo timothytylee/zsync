@@ -53,7 +53,6 @@ __weak_alias(strptime,_strptime)
 #endif
 */
 typedef unsigned char u_char;
-typedef unsigned int uint;
 typedef unsigned __int64 uint64_t;
 
 #define	_ctloc(x)		(_CurrentTimeLocale->x)
