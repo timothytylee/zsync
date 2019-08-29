@@ -562,6 +562,15 @@ off_t get_len(FILE * f) {
     return s.st_size;
 }
 
+#ifndef HAVE_GMTIME_R
+struct tm*
+gmtime_r(const time_t* t, struct tm* d)
+{
+    *d = *(gmtime(t));
+    return d;
+}
+#endif
+
 /****************************************************************************
  *
  * Main program
